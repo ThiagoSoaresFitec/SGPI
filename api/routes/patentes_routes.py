@@ -1,46 +1,38 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS  # ✅ Importação do Flask-CORS
-import subprocess
+from flask import Blueprint, request, jsonify
+from subprocess import run, CalledProcessError
 import os
 import csv
-import mysql.connector
 import sys
 from datetime import datetime
+import psycopg2
+from config.db_config import db_config 
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+TSV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dados_patentes_corrigidos.tsv")
 
-db_config = {
-    "host": "localhost",
-    "user": "root",
-    "password": "10203040",  
-    "database": "patentes_db"
-}
+# Função para conectar ao PostgreSQL
+def conectar():
+    return psycopg2.connect(**db_config)
 
-TSV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dados_patentes_corrigidos.tsv")
-print(f"📌 O backend está procurando o TSV em: {TSV_FILE}")
-
-print(f"📌 O script está rodando de: {os.getcwd()}")
-
+# Função para executar o scraper
 def executar_scraper(termo):
     try:
         print(f"🔍 Buscando patentes para: {termo}")
         python_executable = sys.executable
-        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "buscar_patentes.py"))
-        if not os.path.exists(script_path): raise FileNotFoundError(f"❌ ERRO: O arquivo {script_path} não foi encontrado!")
-        subprocess.run([python_executable, script_path, termo], check=True)
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__),"..", "buscar_patentes.py"))
+        if not os.path.exists(script_path):
+            raise FileNotFoundError(f"❌ ERRO: O arquivo {script_path} não foi encontrado!")
+        run([python_executable, script_path, termo], check=True)
         print("✅ Scraper concluído!")
-    except subprocess.CalledProcessError as e:
+    except CalledProcessError as e:
         print(f"❌ Erro ao executar scraper: {e}")
-
-from datetime import datetime
 
 def converter_data(data_str):
     """ Converte data do formato 'DD/MM/YYYY' para 'YYYY-MM-DD' """
     try:
         return datetime.strptime(data_str, "%d/%m/%Y").strftime("%Y-%m-%d")
     except ValueError:
-        return None  
+        return None
+
 def ler_arquivo_tsv():
     print(f"📌 Verificando existência do arquivo: {TSV_FILE}")
 
@@ -74,7 +66,7 @@ def ler_arquivo_tsv():
                 dados_patente["data_concessao"] = converter_data(valor)
 
             elif "(51) Classificação IPC:" in chave:
-                 dados_patente["classificacao_ipc"] = valor[:255]  # Limita a 255 caracteres
+                dados_patente["classificacao_ipc"] = valor[:255]  # Limita a 255 caracteres
 
             elif "(52) Classificação CPC:" in chave:
                 dados_patente["classificacao_cpc"] = valor[:255]  # Limita a 255 caracteres
@@ -97,9 +89,10 @@ def ler_arquivo_tsv():
     print(f"✅ Total de patentes carregadas: {len(patentes)}")
     return patentes
 
+# Criando o blueprint para as rotas
+patentes_bp = Blueprint('patentes', __name__)
 
-
-@app.route("/buscar", methods=["POST"])
+@patentes_bp.route("/buscar", methods=["POST"])
 def buscar_patentes():
     data = request.get_json()
     if not data or "termo" not in data:
@@ -112,7 +105,7 @@ def buscar_patentes():
     return jsonify(patentes)
 
 # 📌 Rota para salvar as patentes no banco de dados
-@app.route("/salvar", methods=["POST"])
+@patentes_bp.route("/salvar", methods=["POST"])
 def salvar_patentes():
     data = request.get_json()
     palavra_chave = data.get("palavra_chave")
@@ -125,7 +118,7 @@ def salvar_patentes():
         return jsonify({"error": "Nenhum dado para salvar!"}), 400
 
     try:
-        connection = mysql.connector.connect(**db_config)
+        connection = psycopg2.connect(**db_config)
         cursor = connection.cursor()
 
         # 1️⃣ Inserir a busca
@@ -157,50 +150,3 @@ def salvar_patentes():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route("/historico", methods=["GET"])
-def listar_historico():
-    try:
-        connection = mysql.connector.connect(**db_config)
-        cursor = connection.cursor(dictionary=True)
-
-        cursor.execute("""
-            SELECT 
-                b.id AS id_busca,
-                b.palavra_chave,
-                b.data_busca,
-                COUNT(p.id) AS total_patentes
-            FROM buscas b
-            LEFT JOIN patentes p ON p.id_busca = b.id
-            GROUP BY b.id, b.palavra_chave, b.data_busca
-            ORDER BY b.data_busca DESC
-        """)
-        resultados = cursor.fetchall()
-
-        cursor.close()
-        connection.close()
-
-        return jsonify(resultados)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-@app.route("/patentes/<int:id_busca>", methods=["GET"])
-def listar_patentes_por_busca(id_busca):
-        try:
-            connection = mysql.connector.connect(**db_config)
-            cursor = connection.cursor(dictionary=True)
-
-            cursor.execute("SELECT * FROM patentes WHERE id_busca = %s", (id_busca,))
-            resultados = cursor.fetchall()
-
-            cursor.close()
-            connection.close()
-
-            return jsonify(resultados)
-
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)

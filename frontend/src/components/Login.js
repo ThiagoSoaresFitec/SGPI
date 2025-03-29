@@ -11,16 +11,17 @@ import {
 } from "@mui/material";
 import { loginUser } from "./auth";
 import logo from "../assets/logo.png";
-import backgroundImage from "../assets/copia2.png"; 
+import backgroundImage from "../assets/copia2.png";
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const handleLogin = () => {
-    const user = loginUser(username, password);
+    const user = loginUser(email, password);
     if (user) {
-      navigate(`/${user.role.toLowerCase()}`);
+      console.log("================>".user);
+      navigate(`/${user.role}`);
     } else {
       setError("Usuário ou senha incorretos.");
     }
@@ -99,11 +100,12 @@ const Login = () => {
 
           <TextField
             fullWidth
-            label="Usuário"
+            label="Email"
             variant="outlined"
             margin="normal"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={email}
+            type="email"
+            onChange={(e) => setEmail(e.target.value)}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 2,
