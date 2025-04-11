@@ -7,7 +7,7 @@ from datetime import datetime
 import psycopg2
 from config.db_config import db_config 
 
-TSV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dados_patentes_corrigidos.tsv")
+TSV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dados_patentes_corrigidos.tsv")
 
 # Função para conectar ao PostgreSQL
 def conectar():

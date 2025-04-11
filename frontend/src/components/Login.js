@@ -1,31 +1,34 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Button,
-} from "@mui/material";
-import { loginUser } from "./auth";
+import { Box, Card, CardContent, Typography, TextField, Button } from "@mui/material";
+import { loginUser } from "./auth"; // Função de login integrada à API
+import { toast } from "react-toastify"; // Para exibir o toast de erro/sucesso
+import "react-toastify/dist/ReactToastify.css";
 import logo from "../assets/logo.png";
 import backgroundImage from "../assets/copia2.png";
+
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // Você pode usar o state error se preferir exibir mensagem no componente, mas com toast não é necessário
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const handleLogin = () => {
-    const user = loginUser(email, password);
+
+  // Função ajustada para lidar com login assíncrono e exibir toast de erro se não houver sucesso.
+  const handleLogin = async () => {
+    const user = await loginUser(username, password);
+    console.log("============== user ========", user.role);
     if (user) {
-      console.log("================>".user);
-      navigate(`/${user.role}`);
+      // Se o login for bem-sucedido, navega para a rota conforme o perfil (convertido para lowercase)
+      navigate(`/Administrador`);
     } else {
+      // Se o login falhar, exibe toast e seta o erro (se quiser exibir também na tela)
+      toast.error("Usuário ou senha incorretos.");
       setError("Usuário ou senha incorretos.");
     }
   };
+
   return (
     <Box
       sx={{
@@ -54,9 +57,9 @@ const Login = () => {
       >
         <CardContent
           component="form"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            handleLogin();
+            await handleLogin();
           }}
         >
           <motion.div
@@ -100,20 +103,19 @@ const Login = () => {
 
           <TextField
             fullWidth
-            label="Email"
+            label="Usuário"
             variant="outlined"
             margin="normal"
-            value={email}
-            type="email"
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
-                '&:hover fieldset': {
-                  borderColor: '#007B8F',
+                "&:hover fieldset": {
+                  borderColor: "#007B8F",
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#007B8F',
+                "&.Mui-focused fieldset": {
+                  borderColor: "#007B8F",
                 },
               },
             }}
@@ -128,13 +130,13 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
-                '&:hover fieldset': {
-                  borderColor: '#007B8F',
+                "&:hover fieldset": {
+                  borderColor: "#007B8F",
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#007B8F',
+                "&.Mui-focused fieldset": {
+                  borderColor: "#007B8F",
                 },
               },
             }}
@@ -151,7 +153,7 @@ const Login = () => {
             variant="contained"
             color="primary"
             fullWidth
-            sx={{ mt: 3, borderRadius: 2, py: 1.5, fontWeight: 'bold' }}
+            sx={{ mt: 3, borderRadius: 2, py: 1.5, fontWeight: "bold" }}
           >
             Entrar
           </Button>
@@ -160,4 +162,5 @@ const Login = () => {
     </Box>
   );
 };
+
 export default Login;

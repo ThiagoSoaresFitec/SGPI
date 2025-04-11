@@ -1,16 +1,20 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; // Importa o CSS
+
 import Login from "./components/Login";
 import PatentForm from "./components/PatentForm";
 import PatentList from "./components/PatentList";
 import PrivateRoute from "./components/PrivateRoute";
 import Register from "./components/Register";
-import Layout from "./components/Layout"; // Novo Layout
+import Layout from "./components/Layout";
 import PatentDashboard from "./components/PatentDashboard";
 
 const App = () => {
   return (
     <Router>
+      <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
         {/* Página inicial de login */}
         <Route path="/" element={<Login />} />

@@ -8,7 +8,7 @@ const PatentForm = () => {
   const [titulo, setTitulo] = useState("");
   const [numero, setNumero] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [usuario, setUsuario] = useState(""); 
+  const [usuario, setUsuario] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")).username : "");
   const [dataHoraAbertura, setDataHoraAbertura] = useState("");
 
   // Obtém usuário logado e define a data/hora automaticamente
